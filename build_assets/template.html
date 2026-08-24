@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python 排版轉換器</title>
+
+<style>
+%%PRISM_TOMORROW_CSS%%
+</style>
+<style>
+%%PRISM_LINE_NUMBERS_CSS%%
+</style>
+
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --panel: #252526;
+    --border: #3c3c3c;
+    --text: #d4d4d4;
+    --accent: #4fc3f7;
+    --accent-hover: #29b6f6;
+    --error: #f48771;
+    --ok: #89d185;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", Consolas, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    font-size: 16px;
+    margin: 0;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  #status {
+    font-size: 13px;
+    color: #999;
+  }
+  #status.ok { color: var(--ok); }
+  #status.error { color: var(--error); }
+  button {
+    background: var(--accent);
+    color: #111;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  .pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .pane + .pane { border-left: 1px solid var(--border); }
+  .pane-header {
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #999;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  textarea {
+    flex: 1;
+    resize: none;
+    background: var(--panel);
+    color: var(--text);
+    border: none;
+    padding: 14px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    outline: none;
+  }
+  .output-wrap {
+    flex: 1;
+    overflow: auto;
+    background: var(--panel);
+    margin: 0;
+  }
+  .output-wrap pre {
+    margin: 0 !important;
+    height: 100%;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+  #errorBox {
+    display: none;
+    padding: 10px 14px;
+    background: #3a1d1d;
+    color: var(--error);
+    font-size: 12px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  #errorBox.show { display: block; }
+  footer {
+    padding: 6px 20px;
+    font-size: 11px;
+    color: #666;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Python 排版轉換器</h1>
+  <button id="formatBtn">格式化 (black)</button>
+  <button id="sampleBtn" class="secondary">載入範例</button>
+  <button id="copyBtn" class="secondary">複製結果</button>
+  <button id="downloadBtn" class="secondary">下載 .py</button>
+  <span id="status">尚未初始化</span>
+</header>
+
+<div id="errorBox"></div>
+
+<main>
+  <div class="pane">
+    <div class="pane-header"><span>輸入（貼上原始程式碼）</span></div>
+    <textarea id="input" spellcheck="false" placeholder="在這裡貼上你的 Python 程式碼..."></textarea>
+  </div>
+  <div class="pane">
+    <div class="pane-header"><span>輸出（black 排版 + 語法高亮）</span></div>
+    <div class="output-wrap">
+      <pre class="line-numbers"><code id="output" class="language-python"></code></pre>
+    </div>
+  </div>
+</main>
+
+<footer>離線單檔工具：所有執行環境（Pyodide／black／Prism.js）都內嵌在本檔案中，不依賴任何外部網路資源，可離線雙擊開啟使用。</footer>
+
+<script>
+%%PRISM_JS%%
+</script>
+<script>
+%%PRISM_PYTHON_JS%%
+</script>
+<script>
+%%PRISM_LINE_NUMBERS_JS%%
+</script>
+
+<script>
+// ------------------------------------------------------------------
+// 內嵌資產：Pyodide runtime 執行期需要的二進位檔案（wasm / stdlib / lock file / wheels）
+// 全部以 base64 內嵌，透過覆寫 window.fetch 攔截，讓 Pyodide 誤以為是正常網路請求。
+// ------------------------------------------------------------------
+const EMBEDDED_ASSETS = {
+%%EMBEDDED_ASSETS_JSON%%
+};
+
+function base64ToBytes(base64) {
+  const binStr = atob(base64);
+  const bytes = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+  return bytes;
+}
+
+const nativeFetch = window.fetch.bind(window);
+window.fetch = function (input, init) {
+  let url;
+  if (typeof input === 'string') url = input;
+  else if (input && input.url) url = input.url;
+  else url = String(input);
+
+  const filename = url.split('/').pop().split('?')[0];
+  const asset = EMBEDDED_ASSETS[filename];
+  if (asset) {
+    const bytes = base64ToBytes(asset.data);
+    return Promise.resolve(new Response(bytes, {
+      status: 200,
+      statusText: 'OK',
+      headers: { 'Content-Type': asset.type }
+    }));
+  }
+  return nativeFetch(input, init);
+};
+</script>
+
+<script>
+%%PYODIDE_JS%%
+</script>
+<script>
+%%PYODIDE_ASM_JS%%
+</script>
+
+<script>
+const statusEl = document.getElementById('status');
+const errorBox = document.getElementById('errorBox');
+const inputEl = document.getElementById('input');
+const outputEl = document.getElementById('output');
+const formatBtn = document.getElementById('formatBtn');
+const sampleBtn = document.getElementById('sampleBtn');
+const copyBtn = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
+const SAMPLE = `import os,sys
+def   foo(a,b ,   c=1):
+    x={'a':1,'b':2,'c':3}
+    if a==1:
+        print( "hello" ,a,b,c)
+    return [i for i in range(10) if i%2==0]
+
+class Bar:
+    def __init__(self,name):
+        self.name=name
+    def greet(self):
+        return f"hi {self.name}"
+`;
+
+let pyodidePromise = null;
+
+function setStatus(text, cls) {
+  statusEl.textContent = text;
+  statusEl.className = cls || '';
+}
+
+function showError(msg) {
+  if (!msg) {
+    errorBox.classList.remove('show');
+    errorBox.textContent = '';
+    return;
+  }
+  errorBox.textContent = msg;
+  errorBox.classList.add('show');
+}
+
+const WHEEL_BASE = 'https://offline.local/wheels/';
+const WHEEL_FILES = [
+  'click-8.4.2-py3-none-any.whl',
+  'mypy_extensions-1.1.0-py3-none-any.whl',
+  'pathspec-1.1.1-py3-none-any.whl',
+  'platformdirs-4.11.4-py3-none-any.whl',
+  'pytokens-0.4.1-py3-none-any.whl',
+  'black-26.5.1-py3-none-any.whl',
+];
+
+async function getPyodide() {
+  if (pyodidePromise) return pyodidePromise;
+  pyodidePromise = (async () => {
+    formatBtn.disabled = true;
+    setStatus('初始化 Python 執行環境中...');
+    const pyodide = await loadPyodide({ indexURL: 'https://offline.local/pyodide/' });
+    setStatus('安裝 black 排版套件中...');
+    await pyodide.loadPackage('micropip');
+    const micropip = pyodide.pyimport('micropip');
+    await micropip.install(WHEEL_FILES.map(f => WHEEL_BASE + f), { deps: false });
+    setStatus('就緒，可以開始格式化', 'ok');
+    formatBtn.disabled = false;
+    return pyodide;
+  })();
+  return pyodidePromise;
+}
+
+async function formatCode() {
+  const src = inputEl.value;
+  if (!src.trim()) {
+    showError('請先貼上程式碼。');
+    return;
+  }
+  formatBtn.disabled = true;
+  showError(null);
+  try {
+    const pyodide = await getPyodide();
+    setStatus('格式化中...');
+    pyodide.globals.set('__src', src);
+    const resultStr = await pyodide.runPythonAsync(`
+import black, json
+try:
+    __formatted = black.format_str(__src, mode=black.Mode())
+    __result = json.dumps({"ok": True, "code": __formatted})
+except Exception as e:
+    __result = json.dumps({"ok": False, "error": str(e)})
+__result
+`);
+    const result = JSON.parse(resultStr);
+    if (result.ok) {
+      outputEl.textContent = result.code;
+      Prism.highlightElement(outputEl);
+      setStatus('格式化完成', 'ok');
+    } else {
+      showError('black 排版失敗（通常表示程式碼有語法錯誤）：\n' + result.error);
+      setStatus('格式化失敗', 'error');
+    }
+  } catch (e) {
+    showError('執行錯誤：' + e.message);
+    setStatus('發生錯誤', 'error');
+  } finally {
+    formatBtn.disabled = false;
+  }
+}
+
+formatBtn.addEventListener('click', formatCode);
+
+sampleBtn.addEventListener('click', () => {
+  inputEl.value = SAMPLE;
+});
+
+copyBtn.addEventListener('click', async () => {
+  const text = outputEl.textContent;
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+  const old = copyBtn.textContent;
+  copyBtn.textContent = '已複製！';
+  setTimeout(() => copyBtn.textContent = old, 1200);
+});
+
+downloadBtn.addEventListener('click', () => {
+  const text = outputEl.textContent;
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/x-python' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'formatted.py';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+getPyodide().catch(e => {
+  setStatus('Python 執行環境初始化失敗：' + e.message, 'error');
+});
+</script>
+
+</body>
+</html>
