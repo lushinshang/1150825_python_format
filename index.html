@@ -18,16 +18,14 @@
   body {
     margin: 0;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", Consolas, sans-serif;
     background: var(--bg);
     color: var(--text);
   }
   main {
     max-width: 560px;
-    padding: 40px;
+    margin: 0 auto;
+    padding: 56px 40px 20px;
     text-align: center;
   }
   h1 {
@@ -71,6 +69,62 @@
     color: #666;
     line-height: 1.6;
   }
+  .about {
+    max-width: 640px;
+    margin: 8px auto 0;
+    padding: 0 40px 56px;
+    text-align: left;
+  }
+  .about h2 {
+    font-size: 15px;
+    margin: 40px 0 12px;
+    color: var(--text);
+    border-left: 3px solid var(--accent);
+    padding-left: 10px;
+  }
+  .about p {
+    font-size: 13px;
+    line-height: 1.9;
+    color: #b8b8b8;
+    margin: 0 0 12px;
+  }
+  .about ul {
+    margin: 0 0 12px;
+    padding-left: 20px;
+  }
+  .about li {
+    font-size: 13px;
+    line-height: 1.9;
+    color: #b8b8b8;
+    margin-bottom: 6px;
+  }
+  .about code {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .about .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    color: var(--muted);
+    margin: 4px 0 16px;
+  }
+  .about .flow .step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text);
+  }
+  .about .flow .arrow { color: #555; }
 </style>
 </head>
 <body>
@@ -83,5 +137,41 @@
   </div>
   <p class="hint">下載後雙擊打開 python_format.html 即可離線使用，不需要網路連線、不需要安裝 Python 環境。</p>
 </main>
+
+<section class="about">
+  <h2>為什麼做這個工具</h2>
+  <p>程式碼的排版本來就不該由每個人手動決定——同樣一段邏輯，10 個人可能打出 10 種縮排、引號、換行方式，光是格式不一致就會讓 code review 多花時間在吵「風格」而不是「對錯」。這個工具的目的很單純：<strong>貼上去、按一下，拿到一份規則統一、任何人看了都一樣的排版結果</strong>，同時不用在自己電腦上安裝 Python 或任何套件，甚至完全不用連網路。</p>
+
+  <h2>排版的原理</h2>
+  <p>畫面上的「排版」其實是兩件完全獨立的事，先後接力完成：</p>
+  <div class="flow">
+    <span class="step">貼上原始碼</span>
+    <span class="arrow">→</span>
+    <span class="step">black 重排結構</span>
+    <span class="arrow">→</span>
+    <span class="step">Prism.js 上色</span>
+  </div>
+  <p><strong>第一步・black（決定「排成什麼樣子」）</strong><br>
+  black 是 Python 社群最主流的格式化工具，理念是「不妥協」——不提供風格選項，同一份輸入永遠只有一種輸出。運作方式是把程式碼解析成 AST（抽象語法樹），完全丟棄原本的空白與換行，再依固定規則重新印出：行寬 88 字元、字串一律雙引號、縮排 4 格、多行參數自動補尾逗號。也因為是「重印」而非「保留」，就算原本排得很整齊，輸出也可能整段重排。若程式碼本身有語法錯誤，這一步會直接失敗並顯示錯誤訊息，不會硬套格式。</p>
+  <p><strong>第二步・Prism.js（決定「看起來好不好看」）</strong><br>
+  black 排好的文字會再交給 Prism.js 做語法高亮：辨識關鍵字、字串、註解、數字等 token，各自包上顏色標記。這一步純粹是視覺呈現，不會改動任何一個字元。</p>
+
+  <h2>技術上怎麼做到「離線也能跑」</h2>
+  <p>black 原本是要裝在本機 Python 環境才能執行的套件。這個工具透過 <strong>Pyodide</strong>（WebAssembly 編譯的 CPython）在瀏覽器裡跑一份真正的 Python 直譯器，把 black 與其相依套件的 wheel 檔安裝進這個瀏覽器內的 Python 環境，所以看到的排版結果是瀏覽器裡「真的執行 black」算出來的，不是用 JavaScript 模仿規則。</p>
+  <ul>
+    <li>Pyodide 執行環境、black 套件、Prism.js 全部以 base64 編碼直接寫進這份 HTML 檔案裡，不額外連結任何外部檔案。</li>
+    <li>連瀏覽器原生的 <code>fetch()</code> 都被攔截改寫：Pyodide 初始化時原本會向外部伺服器要資料，這裡改成直接從內嵌的 base64 資料生成回應，讓它「以為」自己連上了網路。</li>
+    <li>因此不管是連網開啟這個網頁，還是把 <code>python_format.html</code> 下載到完全沒有網路的電腦上雙擊打開，執行的都是同一套流程，結果一致。</li>
+  </ul>
+
+  <h2>使用須知</h2>
+  <ul>
+    <li><strong>首次開啟較慢</strong>：整個 Python 執行環境（Pyodide）是內嵌在檔案裡直接載入，不用連網下載，但瀏覽器要花幾秒到十幾秒解壓、初始化，畫面上「尚未初始化」變成「就緒」才代表可以格式化。</li>
+    <li><strong>black 只重排格式，不驗證程式邏輯</strong>：能排版成功只代表語法正確，不代表程式碼本身沒有 bug；語法有錯會顯示紅色錯誤訊息並保留原輸入，不會讓頁面當掉。</li>
+    <li><strong>排版規則是固定的</strong>：這裡使用 black 的預設規則（行寬 88 字元、雙引號優先等），沒有提供自訂選項——這是 black「不妥協」設計理念的延伸，如果需要不同風格，需要另外用其他工具。</li>
+    <li><strong>檔案較大（約 19MB）</strong>：因為要把整個 Python 執行環境與套件都塞進單一 HTML，下載離線版時請留意網路環境與儲存空間。</li>
+    <li><strong>資料不會外流</strong>：所有格式化過程都在你自己的瀏覽器裡執行，貼上的程式碼不會被送到任何伺服器。</li>
+  </ul>
+</section>
 </body>
 </html>
