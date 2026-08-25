@@ -154,6 +154,12 @@ def main():
     size = OUT.stat().st_size
     print(f"\n輸出：{OUT}（{size:,} bytes ≈ {size/1024/1024:.1f} MB）")
 
+    digest = hashlib.sha256(OUT.read_bytes()).hexdigest()
+    sha_path = OUT.with_name(OUT.name + ".sha256")
+    sha_path.write_text(f"{digest}  {OUT.name}\n", encoding="utf-8")
+    print(f"sha256：{digest}")
+    print(f"已寫入：{sha_path}（可用 shasum -a 256 -c {sha_path.name} 核對）")
+
 
 if __name__ == "__main__":
     main()

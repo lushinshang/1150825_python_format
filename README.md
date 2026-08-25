@@ -10,6 +10,7 @@
 |---|---|
 | `index.html` | GitHub Pages 首頁，含使用說明與下載按鈕 |
 | `python_format.html` | 實際工具本體（約 19MB），使用者下載離線使用的就是這一個檔案 |
+| `python_format.html.sha256` | 上面那個檔案的 sha256，`build.py` 每次建置自動產生，供下載後核對完整性 |
 | `build_assets/build.py` | 維護用建置腳本，重新產生 `python_format.html` |
 | `build_assets/template.html` | HTML 模板，含 `%%...%%` 佔位標記 |
 
@@ -33,6 +34,16 @@ python3 build.py
 ```
 
 首次執行會自動下載所需的 Pyodide／black／Prism.js 檔案到 `build_assets/` 快取，之後只重跑 base64 內嵌組裝。升級版本時修改 `build.py` 裡的 `URLS`，刪除對應快取檔案後重跑即可。
+
+下載完的 18 個檔案都會核對雜湊（black 系列比對 PyPI 官方雜湊、Pyodide 核心檔案比對 GitHub Releases 與 jsDelivr CDN 交叉驗證後的值、Prism.js 比對 cdnjs 官方 SRI），不符就中止建置。這層驗證只在建置當下執行一次，`python_format.html` 本身不含這段邏輯。
+
+建置完成後會自動產生 `python_format.html.sha256`，跟成品一起 commit。使用者下載後可自行核對：
+
+```bash
+shasum -a 256 -c python_format.html.sha256
+```
+
+這只能防下載損毀或第三方轉貼被動手腳；`.sha256` 檔案跟 `python_format.html` 放在同一個 repo，如果 repo 本身被入侵，兩者可能被一起改掉，不在這個核對的防護範圍內。
 
 ## 已知限制
 
