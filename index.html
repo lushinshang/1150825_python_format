@@ -229,8 +229,20 @@
   <p><strong>待註記項目</strong>：<code>build.py</code> 裡 <code>urllib.request.urlretrieve(url, path)</code> 被規則標記為「動態網址搭配 urllib 使用」的稽核提醒（因為 urllib 支援 <code>file://</code>，若網址被外部輸入操控，理論上可讀到任意本機檔案）。實際檢查後研判為誤報：這裡的 <code>url</code> 全部來自 <code>build.py</code> 檔案內寫死的下載清單，不接受任何外部或使用者輸入，不構成實際風險。</p>
   <p><strong>建置流程的供應鏈驗證</strong>：<code>build.py</code> 下載 Pyodide／black／Prism.js 共 18 個檔案時，每個下載完都會核對雜湊值——black 及其相依套件比對 PyPI 官方雜湊，Pyodide 5 個核心檔案的雜湊取自 GitHub Releases 與 jsDelivr CDN 兩個獨立來源交叉比對確認一致，Prism.js 則核對 cdnjs 官方公開的 SRI 值。內容跟預期不符會直接中止建置，避免下載過程被竄改的檔案無聲嵌入 <code>python_format.html</code>。</p>
   <p><strong>這層驗證的範圍</strong>：只在維護者執行 <code>build.py</code> 建置的當下跑一次，最終產出的 <code>python_format.html</code> 裡不含這段檢查邏輯，使用者開啟工具時不會、也不需要重新驗證。它防的是「下載過程被竄改」，不保證 black／Pyodide／Prism.js 這些上游套件本身沒有漏洞，也不是每次開啟頁面都在跑的即時防護。</p>
-  <p><strong>下載後自行核對完整性</strong>：repo 裡跟 <code>python_format.html</code> 放在一起的 <a href="python_format.html.sha256" style="color:var(--accent-hover)">python_format.html.sha256</a> 是每次建置自動產生的 sha256，下載後可以自行核對拿到的檔案有沒有跟 repo 裡的一致：</p>
+  <p><strong>下載後自行核對完整性</strong>：repo 裡跟 <code>python_format.html</code> 放在一起的 <a href="python_format.html.sha256" style="color:var(--accent-hover)">python_format.html.sha256</a> 是每次建置自動產生的 sha256，下載後可以自行核對拿到的檔案有沒有跟 repo 裡的一致。目前這個網頁載入的 <code>python_format.html</code> 對應的 sha256 是：</p>
+  <pre id="shaBox" style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;overflow-x:auto;margin:0 0 12px;word-break:break-all;white-space:pre-wrap;"><code id="shaValue">讀取中…（若一直沒顯示，代表目前不是用 http(s) 開啟這個頁面，瀏覽器基於安全限制擋掉了本機檔案的讀取，改用下方指令自行核對即可）</code></pre>
   <pre style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;overflow-x:auto;margin:0 0 12px;"><code>shasum -a 256 -c python_format.html.sha256</code></pre>
+  <script>
+    fetch('python_format.html.sha256')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(text => {
+        const hash = text.trim().split(/\s+/)[0];
+        document.getElementById('shaValue').textContent = hash;
+      })
+      .catch(() => {
+        document.getElementById('shaValue').textContent = '無法讀取（可能是離線或用 file:// 開啟），請改用下方指令自行核對，或直接打開 python_format.html.sha256 這個檔案查看。';
+      });
+  </script>
   <p style="margin-top:-6px">要注意的是，這個雜湊檔案跟 <code>python_format.html</code> 放在同一個 repo、同一個網域發布——如果有人能竄改到這個 GitHub repo 本身，他也能同時改掉雜湊檔，兩者一起被換掉不會被這個核對抓到。這個機制防的是下載損毀或第三方轉貼被動過手腳，不是防 repo 帳號本身被入侵。</p>
   <p><strong>結論</strong>：本專案程式碼掃描通過，未發現 XSS、注入等可利用漏洞；輸出結果一律以 <code>textContent</code> 寫入畫面（而非 <code>innerHTML</code>），從設計上就避開了最常見的 DOM XSS 風險。</p>
 </section>
