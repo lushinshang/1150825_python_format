@@ -4,6 +4,7 @@
 缺哪個檔案就自動下載到本目錄快取；升級 Pyodide/black 版本時改下面的 URLS 再重跑即可。
 """
 import base64
+import hashlib
 import pathlib
 import urllib.request
 
@@ -33,6 +34,16 @@ URLS = {
     "pathspec-1.1.1-py3-none-any.whl": "https://files.pythonhosted.org/packages/f1/d9/7fb5aa316bc299258e68c73ba3bddbc499654a07f151cba08f6153988714/pathspec-1.1.1-py3-none-any.whl",
     "platformdirs-4.11.4-py3-none-any.whl": "https://files.pythonhosted.org/packages/28/be/0ff05fcd2938fb58ad9219bd54135968342d214737e012d62d43f06a2dd6/platformdirs-4.11.4-py3-none-any.whl",
     "pytokens-0.4.1-py3-none-any.whl": "https://files.pythonhosted.org/packages/c6/78/397db326746f0a342855b81216ae1f0a32965deccfd7c830a2dbc66d2483/pytokens-0.4.1-py3-none-any.whl",
+}
+
+# black 與其相依套件的 sha256（自 PyPI JSON API 查證），下載後核對，避免下載過程被竄改的內容被無聲嵌入
+KNOWN_SHA256 = {
+    "black-26.5.1-py3-none-any.whl": "4ed7f7da04046d2e488437170797d3b4a4ad83906683bcb7dfc68b673bbce5e2",
+    "click-8.4.2-py3-none-any.whl": "e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76",
+    "mypy_extensions-1.1.0-py3-none-any.whl": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+    "pathspec-1.1.1-py3-none-any.whl": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
+    "platformdirs-4.11.4-py3-none-any.whl": "e34ff91a24bcddc6d939b878bdf3f5c437c9c46fe9e212b1bf455fdf1ee57586",
+    "pytokens-0.4.1-py3-none-any.whl": "26cef14744a8385f35d0e095dc8b3a7583f6c953c2e3d269c7f82484bf5ad2de",
 }
 
 TEXT_INLINE = {
@@ -68,6 +79,19 @@ def ensure_downloaded(filename):
     url = URLS[filename]
     print(f"downloading {filename} <- {url}")
     urllib.request.urlretrieve(url, path)
+
+    expected = KNOWN_SHA256.get(filename)
+    if expected is None:
+        return
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual != expected:
+        path.unlink()
+        raise RuntimeError(
+            f"{filename} 的 sha256 不符，下載內容可能被竄改或來源已變更\n"
+            f"  預期：{expected}\n"
+            f"  實際：{actual}"
+        )
+    print(f"  sha256 核對通過：{actual}")
 
 
 def main():
