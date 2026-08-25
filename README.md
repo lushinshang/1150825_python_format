@@ -11,6 +11,7 @@
 | `index.html` | GitHub Pages 首頁，含使用說明與下載按鈕 |
 | `python_format.html` | 實際工具本體（約 19MB），使用者下載離線使用的就是這一個檔案 |
 | `python_format.html.sha256` | 上面那個檔案的 sha256，`build.py` 每次建置自動產生，供下載後核對完整性 |
+| `verify.html` | 獨立的雜湊驗證工具，瀏覽器內建 Web Crypto API 在本機算 sha256，不用終端機也能核對 |
 | `build_assets/build.py` | 維護用建置腳本，重新產生 `python_format.html` |
 | `build_assets/template.html` | HTML 模板，含 `%%...%%` 佔位標記 |
 
@@ -42,6 +43,10 @@ python3 build.py
 ```bash
 shasum -a 256 -c python_format.html.sha256
 ```
+
+不想用終端機的話，開啟 [`verify.html`](https://lushinshang.github.io/1150825_python_format/verify.html) 選檔案即可，頁面會自動帶入官方雜湊值做比對，全程在瀏覽器本機執行、不上傳檔案內容。
+
+sha256 而非 md5：md5 已有實際可行的碰撞攻擊（能構造出雜湊值相同但內容不同的檔案），不適合用在防竄改的完整性驗證；sha256 目前沒有已知的實際可行碰撞攻擊，是業界現行標準。
 
 這只能防下載損毀或第三方轉貼被動手腳；`.sha256` 檔案跟 `python_format.html` 放在同一個 repo，如果 repo 本身被入侵，兩者可能被一起改掉，不在這個核對的防護範圍內。
 
