@@ -215,6 +215,7 @@
     </div>
 
     <label class="field-label" for="expected">預期的雜湊值（可直接貼 xxx.sha256 檔案的整行內容）</label>
+    <div class="sub-text" id="expectedNote" style="margin-bottom:6px;"></div>
     <textarea id="expected" placeholder="例如：5ac169b0ab4462ec22a87389999a419f5f845fd623720d3291dbcaf04e1b79a6  python_format.html"></textarea>
 
     <div class="verdict" id="verdict"></div>
@@ -236,6 +237,7 @@ const filesizeEl = document.getElementById('filesize');
 const computedHashEl = document.getElementById('computedHash');
 const copyBtn = document.getElementById('copyBtn');
 const expectedEl = document.getElementById('expected');
+const expectedNoteEl = document.getElementById('expectedNote');
 const verdictEl = document.getElementById('verdict');
 
 let lastComputedHash = '';
@@ -319,7 +321,21 @@ copyBtn.addEventListener('click', async () => {
   setTimeout(() => copyBtn.textContent = old, 1200);
 });
 
-expectedEl.addEventListener('input', checkMatch);
+expectedEl.addEventListener('input', () => {
+  expectedNoteEl.textContent = '';
+  checkMatch();
+});
+
+fetch('python_format.html.sha256')
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+  .then(text => {
+    expectedEl.value = text.trim();
+    expectedNoteEl.textContent = '已自動帶入本專案 python_format.html 的官方雜湊值；核對別的檔案時直接覆寫這欄就好。';
+    checkMatch();
+  })
+  .catch(() => {
+    expectedNoteEl.textContent = '無法自動帶入（可能是離線或用 file:// 開啟），請手動貼上要核對的雜湊值。';
+  });
 </script>
 </body>
 </html>
