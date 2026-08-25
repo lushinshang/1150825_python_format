@@ -44,6 +44,26 @@ KNOWN_SHA256 = {
     "pathspec-1.1.1-py3-none-any.whl": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189",
     "platformdirs-4.11.4-py3-none-any.whl": "e34ff91a24bcddc6d939b878bdf3f5c437c9c46fe9e212b1bf455fdf1ee57586",
     "pytokens-0.4.1-py3-none-any.whl": "26cef14744a8385f35d0e095dc8b3a7583f6c953c2e3d269c7f82484bf5ad2de",
+    # Pyodide 核心檔案：雜湊來自 GitHub Releases（pyodide-core-0.26.4.tar.bz2）與 jsDelivr CDN
+    # 兩個獨立來源交叉比對後一致，取其一寫死。
+    "pyodide.js": "c0069107621d5b942a659e737a12e774cc0451feaa2256f475d72e071d844ec7",
+    "pyodide.asm.js": "919560652ed3dad3707cb3a394785da1e046fb13dc0defa162058ff230cb7eed",
+    "pyodide.asm.wasm": "b7e66a19427a55010ac3367c1b6c64b893f9826f783412945fdf0c3337f3bc94",
+    "pyodide-lock.json": "cd50b49de944c579045e122fe8628b31f9ce446379f032f36c05e273d38766e0",
+    "python_stdlib.zip": "72894522b791858b9d613ac786b951d8b5094035dcf376313ea24a466810f336",
+    # micropip／packaging：Pyodide 團隊會重新打包純 Python wheel，內容跟 PyPI 原始檔不同（版本號相同但位元組不同，
+    # 屬正常現象，不是竄改），因此比對基準用 Pyodide 自己的 pyodide-lock.json 宣告值，不是 PyPI 的雜湊。
+    "micropip-0.6.0-py3-none-any.whl": "d97c0c01748ddbc52a19944c6a6788c6a8969ed13158c06bc63c6eb02779cd98",
+    "packaging-23.2-py3-none-any.whl": "3c30fe6689a35520f2040f4963eae8dbdf6aaa8e326674a13bca3f11514c674a",
+}
+
+# Prism.js 檔案：cdnjs 官方 API（api.cdnjs.com）公開的 SRI 雜湊，格式為 sha512 + base64。
+KNOWN_SRI_SHA512 = {
+    "prism-tomorrow.min.css": "vswe+cgvic/XBoF1OcM/TeJ2FW0OofqAVdCZiEYkd6dwGXthvkSFWOoGGJgS2CW70VK5dQM5Oh+7ne47s74VTg==",
+    "prism-line-numbers.min.css": "cbQXwDFK7lj2Fqfkuxbo5iD1dSbLlJGXGpfTDqbggqjHJeyzx88I3rfwjS38WJag/ihH7lzuGlGHpDBymLirZQ==",
+    "prism.min.js": "7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==",
+    "prism-python.min.js": "AKaNmg8COK0zEbjTdMHJAPJ0z6VeNqvRvH4/d5M4sHJbQQUToMBtodq4HaV4fa+WV2UTfoperElm66c9/8cKmQ==",
+    "prism-line-numbers.min.js": "BttltKXFyWnGZQcRWj6osIg7lbizJchuAMotOkdLxHxwt/Hyo+cl47bZU0QADg+Qt5DJwni3SbYGXeGMB5cBcw==",
 }
 
 TEXT_INLINE = {
@@ -80,18 +100,30 @@ def ensure_downloaded(filename):
     print(f"downloading {filename} <- {url}")
     urllib.request.urlretrieve(url, path)
 
-    expected = KNOWN_SHA256.get(filename)
-    if expected is None:
-        return
-    actual = hashlib.sha256(path.read_bytes()).hexdigest()
-    if actual != expected:
-        path.unlink()
-        raise RuntimeError(
-            f"{filename} 的 sha256 不符，下載內容可能被竄改或來源已變更\n"
-            f"  預期：{expected}\n"
-            f"  實際：{actual}"
-        )
-    print(f"  sha256 核對通過：{actual}")
+    data = path.read_bytes()
+
+    if filename in KNOWN_SHA256:
+        expected = KNOWN_SHA256[filename]
+        actual = hashlib.sha256(data).hexdigest()
+        if actual != expected:
+            path.unlink()
+            raise RuntimeError(
+                f"{filename} 的 sha256 不符，下載內容可能被竄改或來源已變更\n"
+                f"  預期：{expected}\n"
+                f"  實際：{actual}"
+            )
+        print(f"  sha256 核對通過：{actual}")
+    elif filename in KNOWN_SRI_SHA512:
+        expected = KNOWN_SRI_SHA512[filename]
+        actual = base64.b64encode(hashlib.sha512(data).digest()).decode("ascii")
+        if actual != expected:
+            path.unlink()
+            raise RuntimeError(
+                f"{filename} 的 sha512 (SRI) 不符，下載內容可能被竄改或來源已變更\n"
+                f"  預期：{expected}\n"
+                f"  實際：{actual}"
+            )
+        print(f"  sha512 (SRI) 核對通過：{actual}")
 
 
 def main():
