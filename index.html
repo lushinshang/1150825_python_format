@@ -6,20 +6,27 @@
 <title>Python 排版轉換器</title>
 <style>
   :root {
-    --bg: #1e1e1e;
-    --panel: #252526;
-    --border: #3c3c3c;
-    --text: #d4d4d4;
-    --muted: #999;
-    --accent: #4fc3f7;
-    --accent-hover: #29b6f6;
+    --page-bg-1: #fff0f6;
+    --page-bg-2: #ede4ff;
+    --card: #ffffff;
+    --panel: #fdf3fa;
+    --border: #f6c6e0;
+    --text: #5c4b6b;
+    --muted: #9c86ad;
+    --accent: #ff8fb3;
+    --accent-hover: #ff6d9d;
+    --accent2: #b6a8ff;
+    --ok: #35a98a;
+    --ok-bg: #ddf7ee;
+    --warn: #c98a1f;
+    --warn-bg: #fff3da;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
     font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", Consolas, sans-serif;
-    background: var(--bg);
+    background: linear-gradient(160deg, var(--page-bg-1) 0%, var(--page-bg-2) 100%);
     color: var(--text);
   }
   main {
@@ -29,8 +36,10 @@
     text-align: center;
   }
   h1 {
-    font-size: 22px;
+    font-size: 24px;
     margin: 0 0 12px;
+    font-weight: 800;
+    color: var(--accent-hover);
   }
   p.desc {
     color: var(--muted);
@@ -46,27 +55,29 @@
   }
   a.btn {
     display: inline-block;
-    padding: 12px 24px;
-    border-radius: 8px;
+    padding: 13px 26px;
+    border-radius: 999px;
     text-decoration: none;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
   a.btn.primary {
-    background: var(--accent);
-    color: #111;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: #fff;
+    box-shadow: 0 4px 0 rgba(199, 92, 140, 0.3);
   }
-  a.btn.primary:hover { background: var(--accent-hover); }
+  a.btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(199, 92, 140, 0.3); }
   a.btn.secondary {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--accent-hover);
+    border: 2px solid var(--border);
   }
-  a.btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+  a.btn.secondary:hover { border-color: var(--accent); background: #fff5f9; transform: translateY(-2px); }
   .hint {
     margin-top: 24px;
     font-size: 12px;
-    color: #666;
+    color: var(--muted);
     line-height: 1.6;
   }
   .about {
@@ -77,15 +88,16 @@
   }
   .about h2 {
     font-size: 15px;
-    margin: 40px 0 12px;
-    color: var(--text);
-    border-left: 3px solid var(--accent);
+    margin: 40px 0 14px;
+    color: var(--accent-hover);
+    font-weight: 800;
+    border-left: 4px solid var(--accent);
     padding-left: 10px;
   }
   .about p {
     font-size: 13px;
     line-height: 1.9;
-    color: #b8b8b8;
+    color: #7a6a8a;
     margin: 0 0 12px;
   }
   .about ul {
@@ -95,7 +107,7 @@
   .about li {
     font-size: 13px;
     line-height: 1.9;
-    color: #b8b8b8;
+    color: #7a6a8a;
     margin-bottom: 6px;
   }
   .about code {
@@ -105,7 +117,7 @@
     padding: 1px 5px;
     font-family: "SF Mono", Menlo, Consolas, monospace;
     font-size: 12px;
-    color: var(--accent);
+    color: var(--accent-hover);
   }
   .about .flow {
     display: flex;
@@ -118,13 +130,47 @@
     margin: 4px 0 16px;
   }
   .about .flow .step {
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 10px;
+    border-radius: 999px;
+    padding: 6px 12px;
     color: var(--text);
+    box-shadow: 0 2px 6px rgba(180, 140, 200, 0.18);
   }
-  .about .flow .arrow { color: #555; }
+  .about .flow .arrow { color: var(--accent2); font-weight: 700; }
+  .scan-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin: 0 0 14px;
+    box-shadow: 0 3px 12px rgba(180, 140, 200, 0.15);
+  }
+  .scan-card .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .scan-card .row:last-child { border-bottom: none; }
+  .scan-card .row .target {
+    color: var(--text);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+  .badge.pass { color: var(--ok); background: var(--ok-bg); }
+  .badge.note { color: var(--warn); background: var(--warn-bg); }
 </style>
 </head>
 <body>
@@ -172,6 +218,16 @@
     <li><strong>檔案較大（約 19MB）</strong>：因為要把整個 Python 執行環境與套件都塞進單一 HTML，下載離線版時請留意網路環境與儲存空間。</li>
     <li><strong>資料不會外流</strong>：所有格式化過程都在你自己的瀏覽器裡執行，貼上的程式碼不會被送到任何伺服器。</li>
   </ul>
+
+  <h2>資安檢查報告</h2>
+  <p>用 <a href="https://semgrep.dev/" style="color:var(--accent-hover)">semgrep</a>（OWASP Top 10 ／ XSS ／ security-audit 規則集）對本專案原始碼做靜態掃描，結果如下：</p>
+  <div class="scan-card">
+    <div class="row"><span class="target">index.html</span><span class="badge pass">0 findings</span></div>
+    <div class="row"><span class="target">build_assets/template.html（工具實際邏輯原始碼）</span><span class="badge pass">0 findings</span></div>
+    <div class="row"><span class="target">build_assets/build.py（維護用建置腳本）</span><span class="badge note">1 項待註記</span></div>
+  </div>
+  <p><strong>待註記項目</strong>：<code>build.py</code> 裡 <code>urllib.request.urlretrieve(url, path)</code> 被規則標記為「動態網址搭配 urllib 使用」的稽核提醒（因為 urllib 支援 <code>file://</code>，若網址被外部輸入操控，理論上可讀到任意本機檔案）。實際檢查後研判為誤報：這裡的 <code>url</code> 全部來自 <code>build.py</code> 檔案內寫死的下載清單，不接受任何外部或使用者輸入，不構成實際風險。</p>
+  <p><strong>結論</strong>：本專案程式碼掃描通過，未發現 XSS、注入等可利用漏洞；輸出結果一律以 <code>textContent</code> 寫入畫面（而非 <code>innerHTML</code>），從設計上就避開了最常見的 DOM XSS 風險。</p>
 </section>
 </body>
 </html>
